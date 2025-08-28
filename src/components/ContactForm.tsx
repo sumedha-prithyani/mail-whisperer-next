@@ -89,169 +89,153 @@ export const ContactForm = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-form-bg to-background p-4">
-      <div className="container mx-auto max-w-4xl">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-4">
-            Contact Form Mailer
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            Create and send professional emails with multiple recipients
-          </p>
-        </div>
+    <div className="grid lg:grid-cols-2 gap-8">
+      {/* Contact Form */}
+      <Card className="bg-card shadow-lg">
+        <CardHeader className="space-y-1">
+          <CardTitle className="text-2xl flex items-center gap-2">
+            <Mail className="w-6 h-6 text-primary" />
+            Compose Message
+          </CardTitle>
+          <CardDescription>
+            Fill in the details for your email message
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="John Doe" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="email" 
+                          placeholder="john@example.com" 
+                          {...field} 
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          {/* Contact Form */}
-          <Card className="bg-form-card/50 backdrop-blur-sm border-border/50 shadow-xl">
-            <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl flex items-center gap-2">
-                <Mail className="w-6 h-6 text-primary" />
-                Compose Message
-              </CardTitle>
-              <CardDescription>
-                Fill in the details for your email message
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="name"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Full Name</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="John Doe" 
-                              {...field} 
-                              className="bg-background/50 border-border/50"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="email"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Email Address</FormLabel>
-                          <FormControl>
-                            <Input 
-                              type="email" 
-                              placeholder="john@example.com" 
-                              {...field} 
-                              className="bg-background/50 border-border/50"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+              <FormField
+                control={form.control}
+                name="subject"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Subject</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Enter email subject" 
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="message"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Message</FormLabel>
+                    <FormControl>
+                      <Textarea 
+                        placeholder="Enter your message here..." 
+                        {...field} 
+                        rows={6}
+                        className="resize-none"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <Button
+                type="submit"
+                disabled={isLoading || recipients.length === 0}
+                className="w-full"
+                size="lg"
+              >
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                    Preparing Email...
                   </div>
-
-                  <FormField
-                    control={form.control}
-                    name="subject"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Subject</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="Enter email subject" 
-                            {...field} 
-                            className="bg-background/50 border-border/50"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="message"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Message</FormLabel>
-                        <FormControl>
-                          <Textarea 
-                            placeholder="Enter your message here..." 
-                            {...field} 
-                            rows={6}
-                            className="bg-background/50 border-border/50 resize-none"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <Button
-                    type="submit"
-                    disabled={isLoading || recipients.length === 0}
-                    className="w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg hover:shadow-xl transition-all duration-300"
-                    size="lg"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Preparing Email...
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <Send className="w-4 h-4" />
-                        Send to {recipients.length} Recipient{recipients.length !== 1 ? 's' : ''}
-                      </div>
-                    )}
-                  </Button>
-                </form>
-              </Form>
-            </CardContent>
-          </Card>
-
-          {/* Recipients Manager */}
-          <div className="space-y-6">
-            <RecipientsManager
-              recipients={recipients}
-              onAddRecipient={handleAddRecipient}
-              onRemoveRecipient={handleRemoveRecipient}
-            />
-            
-            {/* Email Preview */}
-            <Card className="bg-form-card/50 backdrop-blur-sm border-border/50">
-              <CardHeader>
-                <CardTitle className="text-lg">Email Preview</CardTitle>
-                <CardDescription>Preview of your email configuration</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">From:</span>
-                    <p className="font-medium">{form.watch("name") || "Your Name"} ({form.watch("email") || "your@email.com"})</p>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Send className="w-4 h-4" />
+                    Send to {recipients.length} Recipient{recipients.length !== 1 ? 's' : ''}
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Recipients:</span>
-                    <p className="font-medium">{recipients.length} recipient{recipients.length !== 1 ? 's' : ''}</p>
-                  </div>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Subject:</span>
-                  <p className="font-medium">{form.watch("subject") || "Email subject will appear here"}</p>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Message Preview:</span>
-                  <div className="bg-background/30 rounded-md p-3 text-sm max-h-32 overflow-y-auto">
-                    {form.watch("message") || "Your message content will appear here..."}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+                )}
+              </Button>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+
+      {/* Recipients Manager */}
+      <div className="space-y-6">
+        <RecipientsManager
+          recipients={recipients}
+          onAddRecipient={handleAddRecipient}
+          onRemoveRecipient={handleRemoveRecipient}
+        />
+        
+        {/* Email Preview */}
+        <Card className="bg-card shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-lg">Email Preview</CardTitle>
+            <CardDescription>Preview of your email configuration</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted-foreground">From:</span>
+                <p className="font-medium">{form.watch("name") || "Your Name"} ({form.watch("email") || "your@email.com"})</p>
+              </div>
+              <div>
+                <span className="text-muted-foreground">Recipients:</span>
+                <p className="font-medium">{recipients.length} recipient{recipients.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Subject:</span>
+              <p className="font-medium">{form.watch("subject") || "Email subject will appear here"}</p>
+            </div>
+            <div>
+              <span className="text-muted-foreground">Message Preview:</span>
+              <div className="bg-muted/50 rounded-md p-3 text-sm max-h-32 overflow-y-auto">
+                {form.watch("message") || "Your message content will appear here..."}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -73,7 +73,7 @@ export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipien
   };
 
   return (
-    <Card className="bg-form-card/50 backdrop-blur-sm border-border/50 shadow-xl">
+    <Card className="bg-card shadow-lg">
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl flex items-center gap-2">
           <Users className="w-6 h-6 text-primary" />
