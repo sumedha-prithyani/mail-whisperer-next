@@ -83,31 +83,72 @@ export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipien
       try {
         const data = new Uint8Array(e.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
+        
         const emails: string[] = [];
         const duplicates: string[] = [];
         const invalid: string[] = [];
 
-        // Extract emails from all cells
-        jsonData.forEach((row: any) => {
-          if (Array.isArray(row)) {
-            row.forEach((cell: any) => {
-              if (typeof cell === 'string' && cell.includes('@')) {
-                const email = cell.trim().toLowerCase();
-                if (validateEmail(email)) {
-                  if (recipients.includes(email)) {
-                    duplicates.push(email);
-                  } else if (!emails.includes(email)) {
-                    emails.push(email);
+        // Process all sheets in the workbook
+        workbook.SheetNames.forEach(sheetName => {
+          const worksheet = workbook.Sheets[sheetName];
+          
+          // Try different parsing methods
+          // Method 1: Parse as JSON with headers
+          try {
+            const jsonDataWithHeaders = XLSX.utils.sheet_to_json(worksheet);
+            jsonDataWithHeaders.forEach((row: any) => {
+              Object.values(row).forEach((cell: any) => {
+                if (cell && typeof cell === 'string') {
+                  const potentialEmails = cell.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+                  if (potentialEmails) {
+                    potentialEmails.forEach(emailMatch => {
+                      const email = emailMatch.trim().toLowerCase();
+                      if (validateEmail(email)) {
+                        if (recipients.includes(email)) {
+                          if (!duplicates.includes(email)) duplicates.push(email);
+                        } else if (!emails.includes(email)) {
+                          emails.push(email);
+                        }
+                      } else {
+                        if (!invalid.includes(emailMatch)) invalid.push(emailMatch);
+                      }
+                    });
                   }
-                } else {
-                  invalid.push(cell);
                 }
+              });
+            });
+          } catch (headerError) {
+            console.warn('Failed to parse with headers, trying raw data');
+          }
+
+          // Method 2: Parse as raw array data
+          try {
+            const jsonDataRaw = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+            jsonDataRaw.forEach((row: any) => {
+              if (Array.isArray(row)) {
+                row.forEach((cell: any) => {
+                  if (cell && typeof cell === 'string') {
+                    const potentialEmails = cell.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g);
+                    if (potentialEmails) {
+                      potentialEmails.forEach(emailMatch => {
+                        const email = emailMatch.trim().toLowerCase();
+                        if (validateEmail(email)) {
+                          if (recipients.includes(email)) {
+                            if (!duplicates.includes(email)) duplicates.push(email);
+                          } else if (!emails.includes(email)) {
+                            emails.push(email);
+                          }
+                        } else {
+                          if (!invalid.includes(emailMatch)) invalid.push(emailMatch);
+                        }
+                      });
+                    }
+                  }
+                });
               }
             });
+          } catch (rawError) {
+            console.warn('Failed to parse raw data');
           }
         });
 
@@ -126,13 +167,21 @@ export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipien
           messages.push(`${invalid.length} invalid email${invalid.length !== 1 ? 's' : ''} skipped`);
         }
 
-        toast({
-          title: "Excel Import Complete",
-          description: messages.join(', '),
-          variant: emails.length > 0 ? "default" : "destructive",
-        });
+        if (emails.length === 0 && duplicates.length === 0) {
+          toast({
+            title: "No Emails Found",
+            description: "No valid email addresses were found in the file. Please check the file format and content.",
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Excel Import Complete",
+            description: messages.join(', '),
+          });
+        }
 
       } catch (error) {
+        console.error('Excel import error:', error);
         toast({
           title: "Import Failed",
           description: "Unable to read the Excel file. Please check the file format.",
