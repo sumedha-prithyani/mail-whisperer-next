@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, X, Users, Mail } from "lucide-react";
+import { Plus, X, Users, Mail, Upload } from "lucide-react";
+import * as XLSX from 'xlsx';
 
 interface RecipientsManagerProps {
   recipients: string[];
@@ -14,6 +15,7 @@ interface RecipientsManagerProps {
 
 export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipient }: RecipientsManagerProps) => {
   const [newRecipient, setNewRecipient] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const validateEmail = (email: string) => {
@@ -72,6 +74,80 @@ export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipien
     });
   };
 
+  const handleExcelImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+        const emails: string[] = [];
+        const duplicates: string[] = [];
+        const invalid: string[] = [];
+
+        // Extract emails from all cells
+        jsonData.forEach((row: any) => {
+          if (Array.isArray(row)) {
+            row.forEach((cell: any) => {
+              if (typeof cell === 'string' && cell.includes('@')) {
+                const email = cell.trim().toLowerCase();
+                if (validateEmail(email)) {
+                  if (recipients.includes(email)) {
+                    duplicates.push(email);
+                  } else if (!emails.includes(email)) {
+                    emails.push(email);
+                  }
+                } else {
+                  invalid.push(cell);
+                }
+              }
+            });
+          }
+        });
+
+        // Add valid emails
+        emails.forEach(email => onAddRecipient(email));
+
+        // Show results
+        const messages = [];
+        if (emails.length > 0) {
+          messages.push(`${emails.length} email${emails.length !== 1 ? 's' : ''} imported successfully`);
+        }
+        if (duplicates.length > 0) {
+          messages.push(`${duplicates.length} duplicate${duplicates.length !== 1 ? 's' : ''} skipped`);
+        }
+        if (invalid.length > 0) {
+          messages.push(`${invalid.length} invalid email${invalid.length !== 1 ? 's' : ''} skipped`);
+        }
+
+        toast({
+          title: "Excel Import Complete",
+          description: messages.join(', '),
+          variant: emails.length > 0 ? "default" : "destructive",
+        });
+
+      } catch (error) {
+        toast({
+          title: "Import Failed",
+          description: "Unable to read the Excel file. Please check the file format.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <Card className="bg-card shadow-lg">
       <CardHeader className="space-y-1">
@@ -85,22 +161,53 @@ export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipien
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Add Recipient Input */}
-        <div className="flex gap-2">
-          <Input
-            type="email"
-            placeholder="Enter recipient email address"
-            value={newRecipient}
-            onChange={(e) => setNewRecipient(e.target.value)}
-            onKeyPress={handleKeyPress}
-            className="bg-background/50 border-border/50 flex-1"
-          />
-          <Button
-            onClick={handleAddRecipient}
-            size="icon"
-            className="bg-primary hover:bg-primary/90 shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-          </Button>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Input
+              type="email"
+              placeholder="Enter recipient email address"
+              value={newRecipient}
+              onChange={(e) => setNewRecipient(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="bg-background/50 border-border/50 flex-1"
+            />
+            <Button
+              onClick={handleAddRecipient}
+              size="icon"
+              className="bg-primary hover:bg-primary/90 shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {/* Excel Import */}
+          <div className="flex items-center gap-2">
+            <div className="h-px bg-border flex-1"></div>
+            <span className="text-xs text-muted-foreground px-2">OR</span>
+            <div className="h-px bg-border flex-1"></div>
+          </div>
+          
+          <div className="flex gap-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleExcelImport}
+              className="hidden"
+            />
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              className="flex-1 bg-background/50 border-border/50 hover:bg-background/80"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Import from Excel
+            </Button>
+          </div>
+          
+          <p className="text-xs text-muted-foreground">
+            Upload an Excel file (.xlsx, .xls) or CSV with email addresses
+          </p>
         </div>
 
         {/* Recipients List */}
