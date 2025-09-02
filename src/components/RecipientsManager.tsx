@@ -11,9 +11,10 @@ interface RecipientsManagerProps {
   recipients: string[];
   onAddRecipient: (email: string) => void;
   onRemoveRecipient: (email: string) => void;
+  onClearAll?: () => void;
 }
 
-export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipient }: RecipientsManagerProps) => {
+export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipient, onClearAll }: RecipientsManagerProps) => {
   const [newRecipient, setNewRecipient] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -314,7 +315,13 @@ export const RecipientsManager = ({ recipients, onAddRecipient, onRemoveRecipien
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  recipients.forEach(email => onRemoveRecipient(email));
+                  if (onClearAll) {
+                    onClearAll();
+                  } else {
+                    // Fallback: create a copy of recipients to avoid iteration issues
+                    const recipientsCopy = [...recipients];
+                    recipientsCopy.forEach(email => onRemoveRecipient(email));
+                  }
                   toast({
                     title: "All Recipients Cleared",
                     description: "All recipients have been removed from the list.",

@@ -47,6 +47,10 @@ export const ContactForm = () => {
     setRecipients(recipients.filter(r => r !== email));
   };
 
+  const handleClearAll = () => {
+    setRecipients([]);
+  };
+
   const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
     const maxSize = 10 * 1024 * 1024; // 10MB per file
@@ -297,6 +301,7 @@ export const ContactForm = () => {
           recipients={recipients}
           onAddRecipient={handleAddRecipient}
           onRemoveRecipient={handleRemoveRecipient}
+          onClearAll={handleClearAll}
         />
         
         {/* Email Preview */}
