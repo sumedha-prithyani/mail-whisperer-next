@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, Plus, X, Send } from "lucide-react";
+import { Mail, Plus, X, Send, Paperclip, Trash2 } from "lucide-react";
 import { RecipientsManager } from "./RecipientsManager";
 
 const contactFormSchema = z.object({
@@ -23,6 +23,7 @@ type ContactFormData = z.infer<typeof contactFormSchema>;
 
 export const ContactForm = () => {
   const [recipients, setRecipients] = useState<string[]>([]);
+  const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -46,6 +47,40 @@ export const ContactForm = () => {
     setRecipients(recipients.filter(r => r !== email));
   };
 
+  const handleFileAttach = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files || []);
+    const maxSize = 10 * 1024 * 1024; // 10MB per file
+    const maxFiles = 5;
+
+    if (attachedFiles.length + files.length > maxFiles) {
+      toast({
+        title: "Too Many Files",
+        description: `Maximum ${maxFiles} files allowed`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const validFiles = files.filter(file => {
+      if (file.size > maxSize) {
+        toast({
+          title: "File Too Large",
+          description: `${file.name} exceeds 10MB limit`,
+          variant: "destructive",
+        });
+        return false;
+      }
+      return true;
+    });
+
+    setAttachedFiles(prev => [...prev, ...validFiles]);
+    event.target.value = '';
+  };
+
+  const handleRemoveFile = (index: number) => {
+    setAttachedFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
   const onSubmit = async (data: ContactFormData) => {
     if (recipients.length === 0) {
       toast({
@@ -63,6 +98,7 @@ export const ContactForm = () => {
       console.log("Email data:", {
         ...data,
         recipients,
+        attachments: attachedFiles.map(f => ({ name: f.name, size: f.size, type: f.type })),
         timestamp: new Date().toISOString(),
       });
       
@@ -71,12 +107,13 @@ export const ContactForm = () => {
       
       toast({
         title: "Email Prepared",
-        description: `Ready to send to ${recipients.length} recipient(s). Connect Supabase to enable actual email sending.`,
+        description: `Ready to send to ${recipients.length} recipient(s) with ${attachedFiles.length} attachment(s). Connect Supabase to enable actual email sending.`,
       });
       
       // Reset form
       form.reset();
       setRecipients([]);
+      setAttachedFiles([]);
     } catch (error) {
       toast({
         title: "Error",
@@ -176,6 +213,61 @@ export const ContactForm = () => {
                 )}
               />
 
+              {/* File Attachments */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">Attachments</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('file-input')?.click()}
+                    className="h-8"
+                  >
+                    <Paperclip className="w-4 h-4 mr-2" />
+                    Attach Files
+                  </Button>
+                </div>
+                <input
+                  id="file-input"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={handleFileAttach}
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png,.gif,.zip,.rar"
+                />
+                
+                {attachedFiles.length > 0 && (
+                  <div className="space-y-2">
+                    {attachedFiles.map((file, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-md border">
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <Paperclip className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium truncate">{file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {(file.size / 1024 / 1024).toFixed(2)} MB
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveFile(index)}
+                          className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    ))}
+                    <p className="text-xs text-muted-foreground">
+                      {attachedFiles.length}/5 files • Max 10MB per file
+                    </p>
+                  </div>
+                )}
+              </div>
+
               <Button
                 type="submit"
                 disabled={isLoading || recipients.length === 0}
@@ -234,6 +326,22 @@ export const ContactForm = () => {
                 {form.watch("message") || "Your message content will appear here..."}
               </div>
             </div>
+            {attachedFiles.length > 0 && (
+              <div>
+                <span className="text-muted-foreground">Attachments ({attachedFiles.length}):</span>
+                <div className="space-y-2 mt-2">
+                  {attachedFiles.map((file, index) => (
+                    <div key={index} className="flex items-center gap-2 text-sm bg-muted/30 rounded px-2 py-1">
+                      <Paperclip className="w-3 h-3 text-muted-foreground" />
+                      <span className="font-medium truncate">{file.name}</span>
+                      <span className="text-muted-foreground text-xs">
+                        ({(file.size / 1024 / 1024).toFixed(1)}MB)
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
